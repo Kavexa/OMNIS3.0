@@ -36,9 +36,9 @@ class GTTSThread(threading.Thread):
                     tts = gTTS(text=text_to_speak, lang='en', tld='com')
                     tts.save(filename)
 
-                    # 2. Play Audio FORCEFULLY on Card 1 (USB Speaker)
-                    # using 'plughw:1,0' is the safest way to talk to ALSA
-                    os.system(f"mpg321 -a plughw:1,0 -q {filename}")
+                    # 2. Play Audio FORCEFULLY on Card 2 (USB Speaker)
+                    # Based on your diagnostic, USB is Card 2.
+                    os.system(f"mpg321 -a plughw:2,0 -q {filename}")
                     
                     # Cleanup
                     if os.path.exists(filename):

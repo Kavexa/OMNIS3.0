@@ -36,7 +36,8 @@ os.system("aplay -l")
 print("\n--- Diagnostic Tests ---")
 # Test common Pi audio targets
 test_device("hw:0,0", "Default/HDMI Audio")
-test_device("plughw:1,0", "USB Audio (Card 1)")
+test_device("plughw:1,0", "HDMI 0")
+test_device("plughw:2,0", "USB Audio (Card 2)")
 test_device("pulse", "PulseAudio System")
 test_device("default", "System Default")
 
