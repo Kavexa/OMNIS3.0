@@ -36,9 +36,9 @@ class GTTSThread(threading.Thread):
                     tts = gTTS(text=text_to_speak, lang='en', tld='com')
                     tts.save(filename)
 
-                    # 2. Play Audio directly to USB Card 2 (hw:2,0)
-                    # Use -a to specify the device directly
-                    os.system(f"mpg321 -a hw:2,0 -q {filename}")
+                    # 2. Play Audio via PulseAudio (allows mixing with Chrome/Music)
+                    # This avoids "device in use" errors when Chrome is open.
+                    os.system(f"mpg321 -a pulse -q {filename}")
                     
                     # Cleanup
                     if os.path.exists(filename):
