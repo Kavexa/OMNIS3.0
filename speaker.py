@@ -39,7 +39,8 @@ class GTTSThread(threading.Thread):
                     # 2. Play Audio via Digital Pipe (Highest Reliability on Pi)
                     # Use mpg123 with alsa driver for better device control
                     # We use -o alsa to force ALSA instead of libao
-                    cmd = f"mpg123 -q -o alsa --device hw:1,0 {filename}"
+                    # Flag -a is used for audio device in most mpg123 versions
+                    cmd = f"mpg123 -q -o alsa -a hw:1,0 {filename}"
                     exit_code = os.system(cmd)
                     
                     if exit_code != 0:

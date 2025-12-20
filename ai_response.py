@@ -147,8 +147,17 @@ def get_chat_response(payload: str):
             }
         else:
             # Handle empty content or blocked response
-            # If we reached here, the AI failed to provide an answer.
-            print(f"❌ Gemini Error: {last_err}") # Clearer diagnostic
+            print("\n" + "!" * 40)
+            print(f"❌ Gemini API Failed")
+            print(f"   Last Error: {last_err}")
+            if 'response' in locals():
+                try:
+                    print(f"   Response Object: {response}")
+                    if hasattr(response, 'prompt_feedback'):
+                        print(f"   Prompt Feedback: {response.prompt_feedback}")
+                except:
+                    pass
+            print("!" * 40 + "\n")
             
             error_msg = "I'm sorry, I'm having trouble thinking of an answer for that right now. Could you try rephrasing your question?"
             
