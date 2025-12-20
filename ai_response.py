@@ -65,26 +65,31 @@ def get_chat_response(payload: str):
         # (Re)configure genai with the discovered key to be safe
         try:
             genai.configure(api_key=key)
-        except Exception:
-            pass
+        except Exception as e:
+            if os.environ.get('OMNIS_DEBUG') == '1':
+                print(f"[DEBUG] Config error: {e}")
 
-        model = genai.GenerativeModel('gemini-1.5-flash')
-        
-        # Allow token tuning via env var for Pi or testing
-        max_tokens = int(os.environ.get('GEMINI_MAX_TOKENS', '300'))
-        temperature = float(os.environ.get('GEMINI_TEMPERATURE', '0.6'))
-
-        # Try a couple times if the model returns empty content
-        response = None
+        # Try standard name first, then latest fallback
+        models_to_try = ['gemini-1.5-flash', 'gemini-1.5-flash-latest']
         content = None
-        for attempt in range(2):
+        last_err = ""
+
+        for model_name in models_to_try:
             try:
-                # Add system instruction directly to the prompt instead
+                model = genai.GenerativeModel(model_name)
+                
+                # Allow token tuning via env var for Pi or testing
+                max_tokens = int(os.environ.get('GEMINI_MAX_TOKENS', '300'))
+                temperature = float(os.environ.get('GEMINI_TEMPERATURE', '0.6'))
+
+                # Add system instruction directly to the prompt
                 full_prompt = (
                     "You are OMNIS, a helpful school assistant robot. "
-                    "Keep answers brief and concise. Be friendly.\n\n"
+                    "Keep answers brief and concise. Be friendly. "
+                    "Ignore markdown formatting like bold or bullet points.\n\n"
                     f"User: {payload}"
                 )
+
                 response = model.generate_content(
                     full_prompt,
                     generation_config=genai.types.GenerationConfig(
@@ -92,81 +97,38 @@ def get_chat_response(payload: str):
                         temperature=temperature,
                     )
                 )
-            except Exception as e:
-                # transient error -> retry once
-                if attempt == 0:
-                    if os.environ.get('OMNIS_DEBUG') == '1':
-                        print(f"[DEBUG] Generation attempt failed (will retry): {e}")
-                    time.sleep(0.3)
-                    continue
-                else:
-                    raise
 
-            # Debug: show raw response when debugging
-            if os.environ.get('OMNIS_DEBUG') == '1':
+                # Try to get text content safely
                 try:
-                    print(f"[DEBUG] raw response: {response}")
-                except Exception:
-                    pass
-
-            # Try to get text content safely
-            try:
-                content = getattr(response, 'text', None)
-            except Exception:
-                content = None
-
-            # If direct text not available, attempt to assemble from candidates -> content -> parts
-            if not content or not str(content).strip():
-                try:
-                    candidates = getattr(response, 'candidates', None) or []
-                    for cand in candidates:
+                    content = response.text
+                except:
+                    # Fallback for blocked content
+                    if response.candidates:
                         try:
-                            cand_content = getattr(cand, 'content', None)
-                            if cand_content and getattr(cand_content, 'parts', None):
-                                parts = cand_content.parts
-                                text_parts = []
-                                for p in parts:
-                                    # some parts may be objects with .text
-                                    t = getattr(p, 'text', None)
-                                    if t:
-                                        text_parts.append(t)
-                                joined = ''.join(text_parts).strip()
-                                if joined:
-                                    content = joined
-                                    break
-                        except Exception:
-                            continue
-                except Exception:
-                    content = None
+                            content = response.candidates[0].content.parts[0].text
+                        except:
+                            pass
+                
+                if content and str(content).strip():
+                    break # Success!
+            except Exception as e:
+                last_err = str(e)
+                if os.environ.get('OMNIS_DEBUG') == '1':
+                    print(f"[DEBUG] Model {model_name} failed: {e}")
+                continue
 
-            if content and str(content).strip():
-                break
-            # otherwise loop to retry one more time
-        
-        # Try to get text content safely
-        try:
-            content = response.text
-        except:
-            # Response is blocked, check candidates directly
-            content = None
-            if response.candidates and len(response.candidates) > 0:
-                candidate = response.candidates[0]
-                if hasattr(candidate, 'content') and candidate.content and len(candidate.content.parts) > 0:
-                    try:
-                        content = candidate.content.parts[0].text
-                    except:
-                        pass
-        
         if content and str(content).strip():
+            # Clean up the response text from special characters
+            clean_text = str(content).strip().replace('*', '').replace('#', '').replace('_', '')
             return {
                 'choices': [{
                     'message': {
-                        'content': str(content).strip().replace('*', '').replace('#', '')
+                        'content': clean_text
                     }
                 }]
             }
         else:
-            # Handle blocked or empty content with a helpful response
+            # Handle empty content or blocked response
             return {
                 'choices': [{
                     'message': {
@@ -176,11 +138,10 @@ def get_chat_response(payload: str):
             }
     except Exception as e:
         print(f"Error getting AI response: {e}")
-        # Return a helpful error message instead of error
         return {
             'choices': [{
                 'message': {
-                    'content': "I couldn't process that. Could you please rephrase your question?"
+                    'content': f"I couldn't process that. Error: {str(e)[:50]}"
                 }
             }]
         }
