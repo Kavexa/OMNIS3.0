@@ -36,9 +36,9 @@ class GTTSThread(threading.Thread):
                     tts = gTTS(text=text_to_speak, lang='en', tld='com')
                     tts.save(filename)
 
-                    # 2. Play Audio via PulseAudio (allows mixing with Chrome/Music)
-                    # This avoids "device in use" errors when Chrome is open.
-                    os.system(f"mpg321 -a pulse -q {filename}")
+                    # 2. Play Audio via System Default
+                    # This uses the device set in /etc/asound.conf or the OS default
+                    os.system(f"mpg321 -q {filename}")
                     
                     # Cleanup
                     if os.path.exists(filename):
