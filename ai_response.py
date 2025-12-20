@@ -70,7 +70,13 @@ def get_chat_response(payload: str):
                 print(f"[DEBUG] Config error: {e}")
 
         # Try standard name first, then latest fallback
-        models_to_try = ['gemini-1.5-flash', 'gemini-1.5-flash-latest']
+        # Removed '-latest' as it causes 404s on some older API keys/regions
+        models_to_try = [
+            'gemini-1.5-flash', 
+            'gemini-1.5-flash-8b', 
+            'gemini-1.5-pro', 
+            'gemini-pro'
+        ]
         content = None
         last_err = ""
 
