@@ -45,7 +45,7 @@ SCHOOL_RULES = {
 # Custom Q&A for Specific Rules - Easy to Ask!
 CUSTOM_QA = {
     # ATTENDANCE & TIME RULES
-    "What is the assembly time?": "Daily morning assembly is at 8:15 AM sharp.",
+    "What is the assembly time?": "Daily morning assembly is at 8:45 AM sharp.",
     "When am I marked late?": "Students arriving after 8:30 AM are marked as late.",
     "What is the attendance requirement?": "You need minimum 95% attendance to continue in school.",
     "What happens if I'm absent?": "Your parents will be notified within 2 hours of your absence.",

@@ -148,10 +148,18 @@ def get_chat_response(payload: str):
         else:
             # Handle empty content or blocked response
             # If we reached here, the AI failed to provide an answer.
-            # Instead of a strict 'school rules' message, let's be more helpful.
+            print(f"❌ Gemini Error: {last_err}") # Clearer diagnostic
+            
             error_msg = "I'm sorry, I'm having trouble thinking of an answer for that right now. Could you try rephrasing your question?"
-            if "safety" in last_err.lower() or not content:
-                error_msg = "I'm not sure how to answer that. Please ask me something else, or ask about MGM school rules!"
+            
+            # Check for specific key/auth errors
+            lower_err = last_err.lower()
+            if "key" in lower_err or "auth" in lower_err or "403" in lower_err:
+                error_msg = "My AI brain isn't responding. Please check my API key configuration."
+            elif "safety" in lower_err or "block" in lower_err:
+                error_msg = "I'm not sure how to answer that safely. Please ask me something else!"
+            elif not content:
+                error_msg = "I'm not sure how to answer that. Please ask me about MGM school rules!"
             
             return {
                 'choices': [{
